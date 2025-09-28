@@ -65,6 +65,10 @@ function splitBill(input: BillInput): BillOutput {
 function formatDate(date: string): string {
   // input format: YYYY-MM-DD, e.g. "2024-03-21"
   // output format: YYYY年M月D日, e.g. "2024年3月21日"
+  let Year: number = +date.split("-")[0];
+  let Month: number = +date.split("-")[1];
+  let Day: number = +date.split("-")[2];
+  return `${Year}年${Month}月${Day}日`;
 }
 
 function calculateSubTotal(items: BillItem[]): number {
