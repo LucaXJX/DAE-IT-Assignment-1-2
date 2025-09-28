@@ -78,6 +78,8 @@ function calculateSubTotal(items: BillItem[]): number {
 
 function calculateTip(subTotal: number, tipPercentage: number): number {
   // output round to closest 10 cents, e.g. 12.34 -> 12.3
+  const tipAmount = (subTotal * tipPercentage) / 100;
+  return Math.round(tipAmount * 10) / 10;
 }
 
 function scanPersons(items: BillItem[]): string[] {
