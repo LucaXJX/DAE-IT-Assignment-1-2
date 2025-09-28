@@ -84,6 +84,13 @@ function calculateTip(subTotal: number, tipPercentage: number): number {
 
 function scanPersons(items: BillItem[]): string[] {
   // scan the persons in the items
+  const persons = new Set<string>();
+  items.forEach((item) => {
+    if (!item.isShared) {
+      persons.add(item.person);
+    }
+  });
+  return Array.from(persons);
 }
 
 function calculateItems(
