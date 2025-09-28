@@ -119,6 +119,18 @@ function calculatePersonAmount(input: {
   // for shared items, split the price evenly
   // for personal items, do not split the price
   // return the amount for the person
+  let amount = 0;
+  input.items.forEach((item) => {
+    if (item.isShared) {
+      amount += item.price / input.persons;
+    } else if (item.person === input.name) {
+      amount += item.price;
+    }
+  });
+  // add tip
+  amount += (amount * input.tipPercentage) / 100;
+  // round to closest 10 cents
+  return Math.round(amount * 10) / 10;
 }
 
 function adjustAmount(totalAmount: number, items: PersonItem[]): void {
