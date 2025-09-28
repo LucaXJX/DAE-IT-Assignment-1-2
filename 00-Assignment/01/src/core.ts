@@ -73,6 +73,7 @@ function formatDate(date: string): string {
 
 function calculateSubTotal(items: BillItem[]): number {
   // sum up all the price of the items
+  return items.reduce((sum, item) => sum + item.price, 0);
 }
 
 function calculateTip(subTotal: number, tipPercentage: number): number {
