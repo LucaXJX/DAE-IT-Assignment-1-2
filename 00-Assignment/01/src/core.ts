@@ -47,10 +47,8 @@ function splitBill(input: BillInput): BillOutput {
   let subTotal = calculateSubTotal(input.items);
   let tip = calculateTip(subTotal, input.tipPercentage);
   let totalAmount = subTotal + tip;
-  let items = calculateItems({
-    items: input.items,
-    tipPercentage: input.tipPercentage,
-  });
+  // splitBill 函数内部
+  let items = calculateItems(input.items, input.tipPercentage);
   adjustAmount(totalAmount, items);
   return {
     date,
