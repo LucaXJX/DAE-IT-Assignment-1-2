@@ -135,4 +135,17 @@ function calculatePersonAmount(input: {
 
 function adjustAmount(totalAmount: number, items: PersonItem[]): void {
   // adjust the personal amount to match the total amount
+  let sum = items.reduce((acc, item) => acc + item.amount, 0);
+  let difference = Math.round((totalAmount - sum) * 10) / 10;
+  if (difference !== 0) {
+    items[0].amount = Math.round((items[0].amount + difference) * 10) / 10;
+  }
+  items.forEach((item) => {
+    item.amount = Math.round(item.amount * 10) / 10;
+  });
+  // 重新計算總金額
+  sum = items.reduce((acc, item) => acc + item.amount, 0);
+  if (Math.round(sum * 10) / 10 !== totalAmount) {
+    throw new Error("計算錯誤，請檢查輸入的帳單項目");
+  }
 }
