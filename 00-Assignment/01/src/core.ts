@@ -1,6 +1,6 @@
 //input
 
-type BillInput = {
+export type BillInput = {
   date: string;
   location: string;
   tipPercentage: number;
@@ -25,7 +25,7 @@ type PersonalBillItem = CommonBillItem & {
 
 //output
 
-type BillOutput = {
+export type BillOutput = {
   date: string;
   location: string;
   subTotal: number;
@@ -41,7 +41,7 @@ type PersonItem = {
 
 // 核心函數
 
-function splitBill(input: BillInput): BillOutput {
+export function splitBill(input: BillInput): BillOutput {
   let date = formatDate(input.date);
   let location = input.location;
   let subTotal = calculateSubTotal(input.items);
@@ -60,7 +60,7 @@ function splitBill(input: BillInput): BillOutput {
   };
 }
 
-function formatDate(date: string): string {
+export function formatDate(date: string): string {
   // input format: YYYY-MM-DD, e.g. "2024-03-21"
   // output format: YYYY年M月D日, e.g. "2024年3月21日"
   let Year: number = +date.split("-")[0];
@@ -74,7 +74,7 @@ function calculateSubTotal(items: BillItem[]): number {
   return items.reduce((sum, item) => sum + item.price, 0);
 }
 
-function calculateTip(subTotal: number, tipPercentage: number): number {
+export function calculateTip(subTotal: number, tipPercentage: number): number {
   // output round to closest 10 cents, e.g. 12.34 -> 12.3
   const tipAmount = (subTotal * tipPercentage) / 100;
   return Math.round(tipAmount * 10) / 10;
