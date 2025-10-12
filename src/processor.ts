@@ -118,3 +118,16 @@ function formatAsText(output: BillOutput): string {
   return text;
 }
 
+// 寫入單個文件
+async function writeOutputFile(
+  filePath: string,
+  data: BillOutput,
+  format: "json" | "text" = "json"
+): Promise<void> {
+  const content =
+    format === "json" ? JSON.stringify(data, null, 2) : formatAsText(data);
+  // 確保輸出目錄存在
+  await fsPromises.mkdir(path.dirname(filePath), { recursive: true });
+  await fsPromises.writeFile(filePath, content, "utf-8");
+}
+
