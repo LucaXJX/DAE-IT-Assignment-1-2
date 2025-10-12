@@ -3,11 +3,15 @@
   "version": "0.0.0",
   "main": "dist/index.js",
   "scripts": {
+    "start": "ts-node cli.ts",
     "test": "npm run mocha && tsc --noEmit",
     "clean": "rimraf dist",
     "build": "rimraf dist && tsc -p . && rimraf dist/tsconfig.tsbuildinfo",
     "tsc": "tsc -p .",
     "mocha": "rm -f *.js && ts-mocha test/processor.test.ts"
+  },
+  "bin": {
+    "bill-processor": "./dist/cli.js" 
   },
   "keywords": [],
   "author": "",
