@@ -35,3 +35,43 @@ export function parseArgs(args: string[]): {
   return params as { input: string; output: string; format?: "json" | "text" };
 }
 
+// 類型校驗函數
+function isBillInput(data: unknown): data is BillInput {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  const bill = data as BillInput;
+
+  // 檢驗輸入（date、location、tipPercentage、items）
+  const hasRequiredTopLevelFields =
+    "date" in bill &&
+    typeof bill.date === "string" &&
+    "location" in bill &&
+    typeof bill.location === "string" &&
+    "tipPercentage" in bill && // 檢驗tipPercentage
+    typeof bill.tipPercentage === "number" && // 確保是數字
+    "items" in bill &&
+    Array.isArray(bill.items);
+
+  if (!hasRequiredTopLevelFields) {
+    return false;
+  }
+
+  // 檢驗items數組中每個元素的結構
+  return bill.items.every(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      "name" in item &&
+      typeof item.name === "string" &&
+      "price" in item && // 注意：輸入項是price，不是amount
+      typeof item.price === "number" &&
+      "isShared" in item &&
+      typeof item.isShared === "boolean" &&
+      // 非共享項必須包含person字段
+      (!item.isShared
+        ? "person" in item && typeof item.person === "string"
+        : true)
+  );
+}
