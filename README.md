@@ -1,6 +1,8 @@
-# Assignment 2 - 聚餐分帳擴展與檔案處理
+# 程式編寫基礎 Assignment 2
 
-學生名稱：
+# 聚餐分帳擴展與檔案處理
+
+學生名稱：XU JIAXIN
 
 ## 使用說明
 
@@ -31,9 +33,10 @@ npx ts-node src/cli.ts --input=sample-data/input-dir/ --output=sample-data/outpu
 
 ## 檔案結構
 
-- `src/core.ts` - 習作一的核心計算邏輯
-- `src/processor.ts` - 檔案處理主程式（需要實作）
-- `src/types.ts` - 額外的型別定義
+- `src/`
+  - `core.ts` - 習作一的核心計算邏輯
+  - `processor.ts` - 檔案處理主程式（需要實作）
+  - `types.ts` - 額外的型別定義
 - `sample-data/` - 範例資料檔案
   - `single-bill.json` - 單筆帳單範例
   - `input-dir/` - 批次處理輸入目錄
