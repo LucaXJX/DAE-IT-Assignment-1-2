@@ -75,3 +75,35 @@ function isBillInput(data: unknown): data is BillInput {
         : true)
   );
 }
+
+// 讀取單個文件 - 只保留带類型校驗的版本
+async function readInputFile(filePath: string): Promise<BillInput> {
+  try {
+    const content = await fsPromises.readFile(filePath, "utf-8");
+    const data = JSON.parse(content);
+    if (!isBillInput(data)) {
+      throw new Error(`文件 ${filePath} 格式不符合 BillInput 要求`);
+    }
+    return data;
+  } catch (err) {
+    throw new Error(`讀取文件失敗：${(err as Error).message}`);
+  }
+}
+
+// 讀取路徑中的所有JSON文件（批次處理）
+async function readInputDir(
+  dirPath: string
+): Promise<{ filePath: string; data: BillInput }[]> {
+  const files = await fsPromises.readdir(dirPath);
+  const jsonFiles = files.filter((file) => file.endsWith(".json"));
+  return Promise.all(
+    jsonFiles.map(async (file) => {
+      const fullPath = path.join(dirPath, file);
+      return { filePath: fullPath, data: await readInputFile(fullPath) };
+    })
+  );
+}
+
+function processData(input: BillInput): BillOutput {
+  return splitBill(input); // 再次使用ASM1核心邏輯
+}
