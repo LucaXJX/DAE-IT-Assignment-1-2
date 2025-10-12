@@ -107,3 +107,14 @@ async function readInputDir(
 function processData(input: BillInput): BillOutput {
   return splitBill(input); // 再次使用ASM1核心邏輯
 }
+
+function formatAsText(output: BillOutput): string {
+  let text = `${output.date} ${output.location}\n`;
+  text += `小計: ${output.subTotal} HKD, 小費: ${output.tip} HKD, 共計: ${output.totalAmount} HKD\n`;
+  text += "個人應付:\n";
+  output.items.forEach((item) => {
+    text += `${item.name}: ${item.amount} HKD\n`;
+  });
+  return text;
+}
+
