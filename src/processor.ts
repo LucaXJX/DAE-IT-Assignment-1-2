@@ -131,3 +131,44 @@ async function writeOutputFile(
   await fsPromises.writeFile(filePath, content, "utf-8");
 }
 
+export async function main(args: string[]): Promise<void> {
+  try {
+    const { input, output, format = "json" } = parseArgs(args);
+    const isInputDir = (await fsPromises.stat(input)).isDirectory();
+    // 將輸出目錄判斷移到main函數內部
+    const outputStat = await fsPromises.stat(output).catch(() => null);
+    const isOutputDir = outputStat?.isDirectory() ?? false;
+
+    if (isInputDir) {
+      // 批次處理目錄
+      const inputFiles = await readInputDir(input);
+      for (const { filePath, data } of inputFiles) {
+        const result = processData(data);
+        // 輸出文件名和輸入文件名對應，放入輸出目錄
+        const fileName = path.basename(filePath);
+        const outputPath = path.join(
+          output,
+          fileName.replace(".json", format === "json" ? ".json" : ".txt")
+        );
+        await writeOutputFile(outputPath, result, format as "json" | "text");
+      }
+    } else {
+      // 處理單個文件
+      const data = await readInputFile(input);
+      const result = processData(data);
+      const outputPath = isOutputDir
+        ? path.join(
+            output,
+            path
+              .basename(input)
+              .replace(".json", format === "json" ? ".json" : ".txt")
+          )
+        : output;
+      await writeOutputFile(outputPath, result, format as "json" | "text");
+    }
+    console.log("處理完成");
+  } catch (err) {
+    console.error("錯誤:", (err as Error).message);
+    process.exit(1);
+  }
+}
