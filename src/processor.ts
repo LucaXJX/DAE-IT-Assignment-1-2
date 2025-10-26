@@ -76,6 +76,71 @@ function isBillInput(data: unknown): data is BillInput {
   );
 }
 
+// 驗證 BillInput 格式並拋出具體錯誤訊息
+function validateBillInput(
+  data: unknown,
+  filePath: string
+): asserts data is BillInput {
+  if (typeof data !== "object" || data === null) {
+    throw new Error("invalid JSON file");
+  }
+
+  const bill = data as BillInput;
+
+  // 檢查頂層必要欄位
+  if (!("date" in bill) || typeof bill.date !== "string") {
+    throw new Error("missing date field in bill object");
+  }
+
+  if (!("location" in bill) || typeof bill.location !== "string") {
+    throw new Error("missing location field in bill object");
+  }
+
+  if (!("tipPercentage" in bill) || typeof bill.tipPercentage !== "number") {
+    throw new Error("missing tipPercentage field in bill object");
+  }
+
+  if (!("items" in bill) || !Array.isArray(bill.items)) {
+    throw new Error("missing items field in bill object");
+  }
+
+  // 檢查 items 陣列中的每個元素
+  bill.items.forEach((item, index) => {
+    if (typeof item !== "object" || item === null) {
+      throw new Error(`invalid item at index ${index} in items array`);
+    }
+
+    if (!("name" in item) || typeof item.name !== "string") {
+      throw new Error(
+        `missing name field in bill object items array at index ${index}`
+      );
+    }
+
+    if (!("price" in item) || typeof item.price !== "number") {
+      throw new Error(
+        `missing price field in bill object items array at index ${index}`
+      );
+    }
+
+    if (!("isShared" in item) || typeof item.isShared !== "boolean") {
+      throw new Error(
+        `missing isShared field in bill object items array at index ${index}`
+      );
+    }
+
+    // 如果是個人項目，必須有 person 欄位
+    if (
+      item.isShared === false &&
+      (!("person" in item) || typeof item.person !== "string")
+    ) {
+      throw new Error(
+        `missing person field in bill object items array at index ${index}`
+      );
+    }
+  });
+}
+
+
 // 讀取單個文件 - 只保留带類型校驗的版本
 async function readInputFile(filePath: string): Promise<BillInput> {
   try {
