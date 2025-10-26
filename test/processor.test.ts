@@ -347,7 +347,7 @@ describe("Processor", () => {
     });
   });
 
-  describe("檔案格式驗證（10 分）", () => {
+  describe("檔案格式驗證（10 分） + 檔案錯誤處理（8 分） + JSON 錯誤處理（7 分） + 程式穩定性（5 分）", () => {
     async function test(file: string) {
       let error = null;
       try {
@@ -425,24 +425,38 @@ describe("Processor", () => {
         expect(String(error)).to.include("invalid JSON file");
       });
     });
-  });
 
-  // ===== 錯誤處理與程式品質（20 分） =====
+    describe("提供適當的退出碼", () => {
+      it("檢查 CLI 原始碼包含正確的退出碼邏輯", () => {
+        const cliSourceCode = fs.readFileSync("src/cli.ts", "utf-8");
 
-  describe("檔案錯誤處理（8 分）", () => {
-    it("處理檔案不存在的情況");
-    it("處理檔案讀寫權限問題");
-  });
+        // 檢查是否包含 process.exit(0) 用於成功情況
+        expect(cliSourceCode).to.include("process.exit(0)");
 
-  describe("JSON 錯誤處理（7 分）", () => {
-    it("處理 JSON 格式錯誤");
-    it("提供有意義的錯誤訊息");
-  });
+        // 檢查是否有 try-catch 結構
+        expect(cliSourceCode).to.include("try {");
+        expect(cliSourceCode).to.include("} catch (error) {");
 
-  describe("程式穩定性（5 分）", () => {
-    it("程式不會因為輸入錯誤而崩潰");
-    it("提供適當的錯誤訊息");
-    it("提供適當的退出碼");
+        // 檢查 process.exit(1) 和 console.error 是否在 catch 區塊內
+        const catchBlockStart = cliSourceCode.indexOf("} catch (error) {");
+        const catchBlockEnd = cliSourceCode.lastIndexOf("}");
+
+        if (catchBlockStart !== -1 && catchBlockEnd !== -1) {
+          const catchBlock = cliSourceCode.substring(
+            catchBlockStart,
+            catchBlockEnd
+          );
+
+          // 檢查 process.exit(1) 在 catch 區塊內
+          expect(catchBlock).to.include("process.exit(1)");
+
+          // 檢查 console.error(error) 在 catch 區塊內
+          expect(catchBlock).to.include("console.error(error)");
+        } else {
+          throw new Error("無法找到 catch 區塊");
+        }
+      });
+    });
   });
 
   // ===== 加分項目 =====
@@ -468,14 +482,5 @@ describe("Processor", () => {
     it("支援 text 格式輸出");
     it("輸出格式化的文字報告");
     it("處理無效的格式參數");
-  });
-
-  // ===== 整合測試 =====
-
-  describe("End-to-End Integration Tests", () => {
-    it("should complete single file workflow successfully");
-    it("should complete batch processing workflow successfully");
-    it("should handle mixed success and failure scenarios");
-    it("should maintain data integrity throughout processing");
   });
 });
