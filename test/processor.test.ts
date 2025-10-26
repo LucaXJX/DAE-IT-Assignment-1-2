@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as sinon from "sinon";
 import * as core from "../src/core";
+import { BillOutput } from "../src/core";
 
 describe("Processor", () => {
   let inputFile = "sample-data/single-bill.json";
@@ -462,25 +463,508 @@ describe("Processor", () => {
   // ===== 加分項目 =====
 
   describe("批次處理能力（+10 分）", () => {
-    it("支援處理多筆聚餐分帳資料");
-    it("支援輸入目錄");
-    it("支援輸出目錄");
-    it("自動掃描目錄中的所有 JSON 檔案");
-    it("跳過非 JSON 檔案");
+    it("支援處理多筆聚餐分帳資料", async () => {
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputDir}`,
+        `--output=${outputDir}`,
+      ];
+
+      // Mock the splitBill function
+      const mockOutput = {
+        date: "2024年3月21日",
+        location: "測試餐廳",
+        subTotal: 100,
+        tip: 10,
+        totalAmount: 110,
+        items: [{ name: "Alice", amount: 55 }],
+      };
+      const splitBillStub = sinon.stub(core, "splitBill").returns(mockOutput);
+
+      try {
+        // Clean up output directory
+        if (fs.existsSync(outputDir)) {
+          fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(outputDir, { recursive: true });
+
+        await main(testArgs);
+
+        // Verify multiple output files were created
+        const outputFiles = fs.readdirSync(outputDir);
+        expect(outputFiles.length).to.be.greaterThan(1);
+        expect(outputFiles.some((f) => f.includes("bill-1"))).to.be.true;
+        expect(outputFiles.some((f) => f.includes("bill-2"))).to.be.true;
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(outputDir)) {
+          fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+      }
+    });
+
+    it("支援輸入目錄", async () => {
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputDir}`,
+        `--output=${outputDir}`,
+      ];
+
+      const splitBillStub = sinon
+        .stub(core, "splitBill")
+        .returns({} as BillOutput);
+
+      try {
+        if (fs.existsSync(outputDir)) {
+          fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(outputDir, { recursive: true });
+
+        await main(testArgs);
+
+        expect(fs.existsSync(outputDir)).to.be.true;
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(outputDir)) {
+          fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+      }
+    });
+
+    it("支援輸出目錄", async () => {
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputFile}`,
+        `--output=${outputDir}`,
+      ];
+
+      const mockOutput = {
+        date: "2024年3月21日",
+        location: "測試餐廳",
+        subTotal: 100,
+        tip: 10,
+        totalAmount: 110,
+        items: [{ name: "Alice", amount: 55 }],
+      };
+      const splitBillStub = sinon.stub(core, "splitBill").returns(mockOutput);
+
+      try {
+        if (fs.existsSync(outputDir)) {
+          fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(outputDir, { recursive: true });
+
+        await main(testArgs);
+
+        // Verify output directory was created with files
+        expect(fs.existsSync(outputDir)).to.be.true;
+        const files = fs.readdirSync(outputDir);
+        expect(files.length).to.be.greaterThan(0);
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(outputDir)) {
+          fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+      }
+    });
+
+    it("自動掃描目錄中的所有 JSON 檔案", async () => {
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputDir}`,
+        `--output=${outputDir}`,
+      ];
+
+      const mockOutput = {
+        date: "2024年3月21日",
+        location: "測試餐廳",
+        subTotal: 100,
+        tip: 10,
+        totalAmount: 110,
+        items: [{ name: "Alice", amount: 55 }],
+      };
+      const splitBillStub = sinon.stub(core, "splitBill").returns(mockOutput);
+
+      try {
+        if (fs.existsSync(outputDir)) {
+          fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(outputDir, { recursive: true });
+
+        await main(testArgs);
+
+        // Check that all 3 JSON files were processed
+        const outputFiles = fs.readdirSync(outputDir);
+        const jsonFiles = outputFiles.filter((f) => f.endsWith(".json"));
+        expect(jsonFiles.length).to.be.at.least(3);
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(outputDir)) {
+          fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+      }
+    });
+
+    it("跳過非 JSON 檔案", async () => {
+      const testDir = "sample-data/test-dir";
+      const testOutputDir = "sample-data/test-output-dir";
+
+      try {
+        // Create test directory with JSON and non-JSON files
+        if (fs.existsSync(testDir)) {
+          fs.rmSync(testDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(testDir, { recursive: true });
+
+        // Create a JSON file
+        fs.writeFileSync(
+          path.join(testDir, "test.json"),
+          JSON.stringify({
+            date: "2024-03-21",
+            location: "測試",
+            tipPercentage: 10,
+            items: [],
+          })
+        );
+
+        // Create a non-JSON file
+        fs.writeFileSync(path.join(testDir, "test.txt"), "not a JSON file");
+
+        const testArgs = [
+          "ts-node",
+          "src/cli.ts",
+          `--input=${testDir}`,
+          `--output=${testOutputDir}`,
+        ];
+
+        const mockOutput = {
+          date: "2024年3月21日",
+          location: "測試",
+          subTotal: 100,
+          tip: 10,
+          totalAmount: 110,
+          items: [],
+        };
+        const splitBillStub = sinon.stub(core, "splitBill").returns(mockOutput);
+
+        if (fs.existsSync(testOutputDir)) {
+          fs.rmSync(testOutputDir, { recursive: true, force: true });
+        }
+
+        await main(testArgs);
+
+        // Verify only JSON files were processed
+        const outputFiles = fs.readdirSync(testOutputDir);
+        expect(outputFiles).to.include("test.json");
+        expect(outputFiles).to.not.include("test.txt");
+
+        splitBillStub.restore();
+      } finally {
+        if (fs.existsSync(testDir)) {
+          fs.rmSync(testDir, { recursive: true, force: true });
+        }
+        if (fs.existsSync(testOutputDir)) {
+          fs.rmSync(testOutputDir, { recursive: true, force: true });
+        }
+      }
+    });
   });
 
   describe("非同步檔案處理（+5 分）", () => {
-    it("使用 async/await 處理檔案 I/O 操作");
-    it("使用 Promise-based fs API");
-    it("正確處理非同步檔案操作");
-    it("保持非同步操作的功能性");
+    it("使用 async/await 處理檔案 I/O 操作", async () => {
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputFile}`,
+        `--output=${outputFile}`,
+      ];
+
+      const splitBillStub = sinon
+        .stub(core, "splitBill")
+        .returns({} as BillOutput);
+
+      try {
+        if (fs.existsSync(outputFile)) {
+          fs.unlinkSync(outputFile);
+        }
+
+        // Main function should be async and not throw errors
+        await main(testArgs);
+
+        expect(fs.existsSync(outputFile)).to.be.true;
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(outputFile)) {
+          fs.unlinkSync(outputFile);
+        }
+      }
+    });
+
+    it("使用 Promise-based fs API", () => {
+      const processorCode = fs.readFileSync("src/processor.ts", "utf-8");
+      expect(processorCode).to.include("fs/promises");
+      expect(processorCode).to.include("fsPromises.readFile");
+      expect(processorCode).to.include("fsPromises.writeFile");
+    });
+
+    it("正確處理非同步檔案操作", async () => {
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputDir}`,
+        `--output=${outputDir}`,
+      ];
+
+      const mockOutput = {
+        date: "2024年3月21日",
+        location: "測試餐廳",
+        subTotal: 100,
+        tip: 10,
+        totalAmount: 110,
+        items: [{ name: "Alice", amount: 55 }],
+      };
+      const splitBillStub = sinon.stub(core, "splitBill").returns(mockOutput);
+
+      try {
+        if (fs.existsSync(outputDir)) {
+          fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(outputDir, { recursive: true });
+
+        // Should complete without errors
+        await main(testArgs);
+
+        // Verify all files were written
+        const files = fs.readdirSync(outputDir);
+        expect(files.length).to.be.at.least(3);
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(outputDir)) {
+          fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+      }
+    });
+
+    it("保持非同步操作的功能性", async () => {
+      // Test that the main function returns a Promise
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputFile}`,
+        `--output=${outputFile}`,
+      ];
+
+      const result = main(testArgs);
+      expect(result).to.be.instanceOf(Promise);
+
+      const splitBillStub = sinon
+        .stub(core, "splitBill")
+        .returns({} as BillOutput);
+
+      try {
+        await result;
+        expect(fs.existsSync(outputFile)).to.be.true;
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(outputFile)) {
+          fs.unlinkSync(outputFile);
+        }
+      }
+    });
   });
 
   describe("文字格式輸出（+3 分）", () => {
-    it("支援 --format 參數");
-    it("支援 json 格式輸出");
-    it("支援 text 格式輸出");
-    it("輸出格式化的文字報告");
-    it("處理無效的格式參數");
+    it("支援 --format 參數", async () => {
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputFile}`,
+        `--output=${outputFile}`,
+        "--format=text",
+      ];
+
+      const mockOutput = {
+        date: "2024年3月21日",
+        location: "測試餐廳",
+        subTotal: 100,
+        tip: 10,
+        totalAmount: 110,
+        items: [{ name: "Alice", amount: 55 }],
+      };
+      const splitBillStub = sinon.stub(core, "splitBill").returns(mockOutput);
+
+      try {
+        if (fs.existsSync(outputFile)) {
+          fs.unlinkSync(outputFile);
+        }
+
+        await main(testArgs);
+
+        // Should not throw error
+        expect(fs.existsSync(outputFile)).to.be.true;
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(outputFile)) {
+          fs.unlinkSync(outputFile);
+        }
+      }
+    });
+
+    it("支援 json 格式輸出", async () => {
+      const testOutputFile = "test-json-output.json";
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputFile}`,
+        `--output=${testOutputFile}`,
+        "--format=json",
+      ];
+
+      const mockOutput = {
+        date: "2024年3月21日",
+        location: "測試餐廳",
+        subTotal: 100,
+        tip: 10,
+        totalAmount: 110,
+        items: [{ name: "Alice", amount: 55 }],
+      };
+      const splitBillStub = sinon.stub(core, "splitBill").returns(mockOutput);
+
+      try {
+        if (fs.existsSync(testOutputFile)) {
+          fs.unlinkSync(testOutputFile);
+        }
+
+        await main(testArgs);
+
+        const content = fs.readFileSync(testOutputFile, "utf-8");
+        expect(content).to.include('"date"');
+        expect(content).to.include('"location"');
+        JSON.parse(content); // Should be valid JSON
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(testOutputFile)) {
+          fs.unlinkSync(testOutputFile);
+        }
+      }
+    });
+
+    it("支援 text 格式輸出", async () => {
+      const testOutputFile = "test-text-output.txt";
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputFile}`,
+        `--output=${testOutputFile}`,
+        "--format=text",
+      ];
+
+      const mockOutput = {
+        date: "2024年3月21日",
+        location: "測試餐廳",
+        subTotal: 100,
+        tip: 10,
+        totalAmount: 110,
+        items: [{ name: "Alice", amount: 55 }],
+      };
+      const splitBillStub = sinon.stub(core, "splitBill").returns(mockOutput);
+
+      try {
+        if (fs.existsSync(testOutputFile)) {
+          fs.unlinkSync(testOutputFile);
+        }
+
+        await main(testArgs);
+
+        const content = fs.readFileSync(testOutputFile, "utf-8");
+        expect(content).to.include("測試餐廳");
+        expect(content).to.include("小計:");
+        expect(content).to.include("小費:");
+        expect(content).to.include("共計:");
+        expect(content).to.include("個人應付:");
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(testOutputFile)) {
+          fs.unlinkSync(testOutputFile);
+        }
+      }
+    });
+
+    it("輸出格式化的文字報告", async () => {
+      const testOutputFile = "test-formatted-output.txt";
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputFile}`,
+        `--output=${testOutputFile}`,
+        "--format=text",
+      ];
+
+      const mockOutput = {
+        date: "2024年3月21日",
+        location: "測試餐廳",
+        subTotal: 100,
+        tip: 10,
+        totalAmount: 110,
+        items: [
+          { name: "Alice", amount: 55 },
+          { name: "Bob", amount: 55 },
+        ],
+      };
+      const splitBillStub = sinon.stub(core, "splitBill").returns(mockOutput);
+
+      try {
+        if (fs.existsSync(testOutputFile)) {
+          fs.unlinkSync(testOutputFile);
+        }
+
+        await main(testArgs);
+
+        const content = fs.readFileSync(testOutputFile, "utf-8");
+        const lines = content.split("\n");
+        expect(lines.length).to.be.greaterThan(3);
+        expect(content).to.include("Alice");
+        expect(content).to.include("Bob");
+      } finally {
+        splitBillStub.restore();
+        if (fs.existsSync(testOutputFile)) {
+          fs.unlinkSync(testOutputFile);
+        }
+      }
+    });
+
+    it("處理無效的格式參數", async () => {
+      const testArgs = [
+        "ts-node",
+        "src/cli.ts",
+        `--input=${inputFile}`,
+        `--output=${outputFile}`,
+        "--format=invalid",
+      ];
+
+      // Mock process.exit to prevent actual exit
+      const originalExit = process.exit;
+      let exitCalled = false;
+      let exitCode = 0;
+
+      (process as any).exit = (code: number) => {
+        exitCalled = true;
+        exitCode = code;
+      };
+
+      try {
+        await main(testArgs);
+
+        // Should have called process.exit(1) due to error
+        expect(exitCalled).to.be.true;
+        expect(exitCode).to.equal(1);
+      } finally {
+        process.exit = originalExit;
+      }
+    });
   });
 });
