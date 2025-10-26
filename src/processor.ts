@@ -140,6 +140,58 @@ function validateBillInput(
   });
 }
 
+/**
+ * 讀取 JSON 檔案並解析
+ * @param filePath 檔案路徑
+ * @returns 解析後的資料
+ */
+export async function readJSONFile(filePath: string): Promise<any> {
+  try {
+    // 檢查檔案是否存在
+    await fsPromises.access(filePath);
+  } catch (err) {
+    throw new Error(`input file not found: ${filePath}`);
+  }
+
+  try {
+    const content = await fsPromises.readFile(filePath, "utf-8");
+
+    // 檢查是否為空檔案
+    if (content.trim() === "") {
+      throw new Error("input file is empty");
+    }
+
+    // 嘗試解析 JSON
+    let data;
+    try {
+      data = JSON.parse(content);
+    } catch (parseErr) {
+      throw new Error("invalid JSON file");
+    }
+
+    // 驗證格式
+    validateBillInput(data, filePath);
+
+    return data;
+  } catch (err) {
+    if ((err as Error).message.includes("input file not found")) {
+      throw err;
+    }
+    if ((err as Error).message.includes("input file is empty")) {
+      throw err;
+    }
+    if ((err as Error).message.includes("invalid JSON file")) {
+      throw err;
+    }
+    if (
+      (err as Error).message.includes("missing") ||
+      (err as Error).message.includes("invalid")
+    ) {
+      throw err;
+    }
+    throw err;
+  }
+}
 
 // 讀取單個文件 - 只保留带類型校驗的版本
 async function readInputFile(filePath: string): Promise<BillInput> {
