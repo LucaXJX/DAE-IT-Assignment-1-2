@@ -1,0 +1,8 @@
+date: 2024-03-22
+location: 美味餐廳
+items:
+  0:
+    name: 義大利麵
+    price": 120
+    isShared": false
+    person": Charlie
