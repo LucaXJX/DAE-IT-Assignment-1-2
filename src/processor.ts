@@ -235,6 +235,22 @@ function formatAsText(output: BillOutput): string {
   return text;
 }
 
+/**
+ * 寫入 JSON 檔案
+ * @param filePath 檔案路徑
+ * @param data 要寫入的資料
+ */
+export async function writeJSONFile(
+  filePath: string,
+  data: any
+): Promise<void> {
+  const content = JSON.stringify(data, null, 2);
+  // 確保輸出目錄存在
+  const dir = path.dirname(filePath);
+  await fsPromises.mkdir(dir, { recursive: true });
+  await fsPromises.writeFile(filePath, content, "utf-8");
+}
+
 // 寫入單個文件
 async function writeOutputFile(
   filePath: string,
